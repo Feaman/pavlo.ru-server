@@ -1,0 +1,1 @@
+export const token = '34kj-l3k4-lk34-jk3j'

@@ -1,7 +1,6 @@
 import BaseService from '~/services/base'
 import UserModel, { IUser, IUserDB } from '~/models/user'
 import { MysqlError } from 'mysql'
-import StatusesService from './statuses'
 
 export default class UsersService extends BaseService {
   static async create (userData: IUser): Promise<UserModel> {

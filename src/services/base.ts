@@ -7,9 +7,9 @@ export default class BaseService {
     const mysql = require("mysql")
     this.pool = mysql.createPool({
       socketPath: "/var/lib/mysql/mysql.sock",
-      user: "test",
-      password: "testpassword",
-      database: "test",
+      user: "interview_user",
+      password: "interview_user",
+      database: "interview",
     })
   }
 }
