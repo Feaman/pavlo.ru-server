@@ -1,14 +1,19 @@
 import BaseService from '~/services/base'
 import CandidateModel, { ICandidate, ICandidateDB } from '~/models/candidate'
 import { MysqlError } from 'mysql'
+import UserModel from '~/models/user'
 
 export default class CandidatesService extends BaseService {
-  static async getList (): Promise<CandidateModel[]> {
+  static async getList (user: UserModel): Promise<CandidateModel[]> {
     return new Promise((resolve, reject) => {
       const notes: CandidateModel[] = []
+      const sql = 'select * from candidates where user_id = ? order by created desc'
 
       this.pool.query(
-        'select * from candidates order by created desc', 
+        {
+          sql,
+          values: [user.id],
+        },
         (error: any, candidatesData: ICandidate[]) => {
           if (error) {
             return reject({ message: error.message })
@@ -24,44 +29,44 @@ export default class CandidatesService extends BaseService {
     })
   }
 
-  static async create (candidateData: ICandidate): Promise<CandidateModel> {
-    const existentCandidate = await this.findById(String(candidateData.id))
+  static async create (candidateData: ICandidate, user: UserModel): Promise<CandidateModel> {
+    const existentCandidate = await this.findById(String(candidateData.id), user)
     if (existentCandidate) {
       throw new Error('Candidate with such an id is already exists')
     }
 
     const candidate = new CandidateModel(candidateData)
-    return candidate.save()
+    return candidate.save(user)
   }
 
-  static async update (candidateId: string, data: any): Promise<CandidateModel> {
-    const candidate = await this.findById(candidateId)
+  static async update (candidateId: string, data: any, user: UserModel): Promise<CandidateModel> {
+    const candidate = await this.findById(candidateId, user)
     if (!candidate) {
       throw new Error('Candidate not found')
     }
     candidate.name = data.name
     candidate.data = data.data
 
-    return candidate.save()
+    return candidate.save(user)
   }
 
-  static async remove (candidateId: string): Promise<CandidateModel> {
-    const candidate = await this.findById(candidateId)
+  static async remove (candidateId: string, user: UserModel): Promise<CandidateModel> {
+    const candidate = await this.findById(candidateId, user)
     if (!candidate) {
       throw new Error('Candidate not found')
     }
     return candidate.remove()
   }
 
-  static findById (id: string): Promise<CandidateModel | null> {
-    return this.findByField('id', id)
+  static findById (id: string, user: UserModel): Promise<CandidateModel | null> {
+    return this.findByField('id', id, user)
   }
 
-  static async findByField (fieldName: string, fieldValue: string): Promise<CandidateModel | null> {
+  static async findByField (fieldName: string, fieldValue: string, user: UserModel): Promise<CandidateModel | null> {
     return new Promise((resolve, reject) => {
       this.pool.query({
-        sql: `select * from candidates where ${fieldName} = ?`,
-        values: [fieldValue],
+        sql: `select * from candidates where ${fieldName} = ? and user_id = ?`,
+        values: [fieldValue, user.id],
       },
       (error: MysqlError, candidatesDBData: ICandidateDB[]) => {
         if (error) {

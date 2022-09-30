@@ -30,19 +30,20 @@ function checkAccess(request: Request, response: Response, next: NextFunction) {
 
 app.use(async (request: Request, _response: Response, next: NextFunction) => {
   try {
-    const user = await RequestService.getUserFromRequest(request)
+    const currentUser = await RequestService.getUserFromRequest(request)
 
-    if (!user) return next()
+    if (!currentUser) return next()
 
     storage.set(
       request, 
       {
-        id: user.id,
-        firstName: user.firstName,
-        secondName: user.secondName,
-        email: user.email,
+        id: currentUser.id,
+        firstName: currentUser.firstName,
+        secondName: currentUser.secondName,
+        email: currentUser.email,
       }
     )
+
     next()
   } catch (error: any) {
     return next(error)
@@ -54,10 +55,10 @@ app.get(
   checkAccess,
   async (request: Request, response: Response, next: NextFunction) => {
     try {
-      const user = storage.get(request)
-      const candidates = await CandidatesService.getList()
+      const currentUser = storage.get(request)
+      const candidates = await CandidatesService.getList(currentUser )
 
-      return response.status(200).json({ candidates, user })
+      return response.status(200).json({ candidates, user: currentUser  })
     } catch (error: any) {
       return next(error)
     }
@@ -68,13 +69,13 @@ app.post(
   '/login',
   async (request: Request, response: Response) => {
     try {
-      const user = await UsersService.login(request.body)
-      const candidates = await CandidatesService.getList()
+      const currentUser = await UsersService.login(request.body)
+      const candidates = await CandidatesService.getList(currentUser)
 
       response.status(200).json({
         candidates,
-        user,
-        token: jwt.sign({ id: user.id }, RequestService.TOKEN_KEY),
+        user: currentUser,
+        token: jwt.sign({ id: currentUser.id }, RequestService.TOKEN_KEY),
       })
     } catch (error: any) {
       return response.status(400).send({statusCode: 400, message: error.message })
@@ -87,7 +88,8 @@ app.post(
   checkAccess,
   async (request: Request, response: Response) => {
     try {
-      const candidate = await CandidatesService.create(request.body)
+      const currentUser = storage.get(request)
+      const candidate = await CandidatesService.create(request.body, currentUser)
       return response.send(candidate)
     } catch (error: any) {
       return response.status(500).send({statusCode: 500, message: error.message })
@@ -100,8 +102,9 @@ app.put(
   checkAccess,
   async (request: Request, response: Response) => {
     try {
+      const currentUser = storage.get(request)
       const { candidateId } = request.params
-      const candidate = await CandidatesService.update(candidateId, request.body)
+      const candidate = await CandidatesService.update(candidateId, request.body, currentUser)
       return response.send(candidate)
     } catch (error: any) {
       return response.status(500).send({statusCode: 500, message: error.message })
@@ -114,8 +117,9 @@ app.delete(
   checkAccess,
   async (request: Request, response: Response) => {
     try {
+      const currentUser = storage.get(request)
       const { candidateId } = request.params
-      await CandidatesService.remove(candidateId)
+      await CandidatesService.remove(candidateId, currentUser)
       return response.send('ok')
     } catch (error: any) {
       return response.status(500).send({statusCode: 500, message: error.message })

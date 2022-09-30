@@ -1,6 +1,7 @@
 import BaseService from '~/services/base'
 import Validator from 'validatorjs'
 import { MysqlError, OkPacket } from 'mysql'
+import UserModel from './user'
 
 export interface ICandidate {
   id: number,
@@ -40,7 +41,7 @@ export default class CandidateModel {
     return !!validation.passes()
   }
 
-  save (): Promise<CandidateModel> {
+  save (user: UserModel): Promise<CandidateModel> {
     return new Promise((resolve, reject) => {
       if (!this.validate()) {
         return reject(new Error('Candidate validation failed'))
@@ -50,6 +51,7 @@ export default class CandidateModel {
         const data = {
           name: this.name,
           data: this.data,
+          user_id: user.id,
         }
         BaseService.pool.query('insert into candidates set ?', data, (error: MysqlError | null, result: OkPacket) => {
           if (error) {

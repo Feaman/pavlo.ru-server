@@ -9,9 +9,7 @@ export default class RequestService {
 
   static async getUserFromRequest (request: Request): Promise<UserModel | null> {
     if (request.headers.authorization){
-      const payload = <{ [key: string]: any }>(
-      jwt.verify(request.headers.authorization.split(' ')[1], this.TOKEN_KEY)
-    )
+      const payload = <{ [key: string]: any }>( jwt.verify(request.headers.authorization.split(' ')[1], this.TOKEN_KEY))
       return await UsersService.findById(payload.id)
     }
 
