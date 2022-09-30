@@ -84,6 +84,24 @@ app.post(
 )
 
 app.post(
+  '/users',
+  async (request: Request, response: Response) => {
+    try {
+      const user = await UsersService.create(request.body)
+      const candidates = await CandidatesService.getList(user)
+
+      response.status(200).json({
+        candidates,
+        user,
+        token: jwt.sign({ id: user.id }, RequestService.TOKEN_KEY),
+      })
+    } catch (error: any) {
+      return response.status(400).send({statusCode: 400, message: error.message })
+    }
+  },
+)
+
+app.post(
   '/candidates',
   checkAccess,
   async (request: Request, response: Response) => {
