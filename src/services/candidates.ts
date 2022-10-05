@@ -1,7 +1,7 @@
 import BaseService from '~/services/base'
 import CandidateModel, { ICandidate, ICandidateDB } from '~/models/candidate'
-import { MysqlError } from 'mysql'
 import UserModel from '~/models/user'
+import { MysqlError, OkPacket } from 'mysql'
 
 export default class CandidatesService extends BaseService {
   static async getList (user: UserModel): Promise<CandidateModel[]> {
@@ -36,18 +36,19 @@ export default class CandidatesService extends BaseService {
     }
 
     const candidate = new CandidateModel(candidateData)
-    return candidate.save(user)
+    return CandidatesService.save(candidate, user)
   }
 
-  static async update (candidateId: string, data: any, user: UserModel): Promise<CandidateModel> {
+  static async update (candidateId: string, data: ICandidate, user: UserModel): Promise<CandidateModel> {
     const candidate = await this.findById(candidateId, user)
     if (!candidate) {
       throw new Error('Candidate not found')
     }
+
     candidate.name = data.name
     candidate.data = data.data
 
-    return candidate.save(user)
+    return CandidatesService.save(candidate, user)
   }
 
   static async remove (candidateId: string, user: UserModel): Promise<CandidateModel> {
@@ -55,7 +56,19 @@ export default class CandidatesService extends BaseService {
     if (!candidate) {
       throw new Error('Candidate not found')
     }
-    return candidate.remove()
+
+    return new Promise((resolve, reject) => {
+      BaseService.pool.query(
+        'delete from candidates where id = ?',
+        [candidate.id],
+        (error: MysqlError | null) => {
+          if (error) {
+            return reject(error)
+          }
+          resolve(candidate)
+        }
+      )
+    })
   }
 
   static findById (id: string, user: UserModel): Promise<CandidateModel | null> {
@@ -87,6 +100,42 @@ export default class CandidatesService extends BaseService {
 
         resolve(new CandidateModel(candidateData))
       })
+    })
+  }
+
+  static save (candidate: CandidateModel, user: UserModel): Promise<CandidateModel> {
+    return new Promise((resolve, reject) => {
+      if (!candidate.validate()) {
+        return reject(new Error('Candidate validation failed'))
+      }
+
+      if (!candidate.id) {
+        const data = {
+          name: candidate.name,
+          data: candidate.data,
+          user_id: user.id,
+        }
+        BaseService.pool.query('insert into candidates set ?', data, (error: MysqlError | null, result: OkPacket) => {
+          if (error) {
+            return reject(error)
+          }
+
+          candidate.id = result.insertId
+          resolve(candidate)
+        })
+      } else {
+        const queryParams = [candidate.name, candidate.data, candidate.id]
+        BaseService.pool.query(
+          'update candidates set name = ?, data = ? where id = ?',
+          queryParams,
+          (error: MysqlError | null) => {
+            if (error) {
+              return reject(error)
+            }
+            resolve(candidate)
+          }
+        )
+      }
     })
   }
 }

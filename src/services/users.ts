@@ -1,6 +1,6 @@
 import BaseService from '~/services/base'
 import UserModel, { IUser, IUserDB } from '~/models/user'
-import { MysqlError } from 'mysql'
+import { MysqlError, OkPacket } from 'mysql'
 
 export default class UsersService extends BaseService {
   static async create (userData: IUser): Promise<UserModel> {
@@ -9,8 +9,7 @@ export default class UsersService extends BaseService {
       throw new Error('User with such an email is already exists')
     }
 
-    const user = new UserModel(userData)
-    return user.save()
+    return UsersService.save(new UserModel(userData))
   }
 
   static async login (userData: IUser): Promise<UserModel> {
@@ -61,6 +60,46 @@ export default class UsersService extends BaseService {
 
         resolve(new UserModel(userData))
       })
+    })
+  }
+
+  static save (user: UserModel): Promise<UserModel> {
+    return new Promise((resolve, reject) => {
+      if (!user.validateField('email')) {
+        return reject(new Error('Email format is so wrong'))
+      }
+      if (!user.validate()) {
+        return reject(new Error('User validation failed'))
+      }
+
+      if (!user.id) {
+        const data = {
+          first_name: user.firstName,
+          second_name: user.secondName,
+          email: user.email,
+          password_hash: UserModel.hashPassword(user.password),
+        }
+        BaseService.pool.query('insert into users set ?', data, (error: MysqlError | null, result: OkPacket) => {
+          if (error) {
+            return reject(error)
+          }
+
+          user.id = result.insertId
+          resolve(user)
+        })
+      } else {
+        const queryParams = [user.firstName, user.secondName, user.email, user.passwordHash, user.id]
+        BaseService.pool.query(
+          'update notes set first_name = ?, second_name = ?, email = ?, password_hash = ? where id = ?',
+          queryParams,
+          (error: MysqlError | null) => {
+            if (error) {
+              return reject(error)
+            }
+            resolve(user)
+          }
+        )
+      }
     })
   }
 }
