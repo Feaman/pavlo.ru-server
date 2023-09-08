@@ -1,4 +1,3 @@
-import Validator from 'validatorjs'
 import BaseModel from './base'
 
 export interface IUser {

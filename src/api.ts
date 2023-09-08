@@ -1,12 +1,14 @@
 import cors from 'cors'
 import express, { NextFunction, Request, Response } from 'express'
 import jwt from 'jsonwebtoken'
+import AuthorsService from './services/authors'
 import BaseService from './services/base'
-import CandidatesService from './services/candidates'
+import BooksService from './services/books'
 import RequestService from './services/request'
 import UsersService from './services/users'
+import VersesService from './services/verses'
  
-const PORT = 3016
+const PORT = 3017
 
 const app = express()
 const storage = new WeakMap()
@@ -50,17 +52,16 @@ app.use(async (request: Request, _response: Response, next: NextFunction) => {
   }
 })
 
+
 app.get(
-  '/config',
+  '/user',
   checkAccess,
   async (request: Request, response: Response, next: NextFunction) => {
     try {
-      const currentUser = storage.get(request)
-      const candidates = await CandidatesService.getList(currentUser )
-
-      return response.status(200).json({ candidates, user: currentUser  })
-    } catch (error: any) {
-      return next(error)
+      const user = storage.get(request)
+      return response.status(200).json(user)
+    } catch (error) {
+      return next(error as Error)
     }
   },
 )
@@ -70,77 +71,173 @@ app.post(
   async (request: Request, response: Response) => {
     try {
       const currentUser = await UsersService.login(request.body)
-      const candidates = await CandidatesService.getList(currentUser)
 
       response.status(200).json({
-        candidates,
         user: currentUser,
         token: jwt.sign({ id: currentUser.id }, RequestService.TOKEN_KEY),
       })
     } catch (error: any) {
-      return response.status(400).send({statusCode: 400, message: error.message })
+      return response.status(400).send({ statusCode: 400, message: error.message })
     }
   },
 )
 
-app.post(
-  '/users',
+app.get(
+  '/verses',
   async (request: Request, response: Response) => {
     try {
-      const user = await UsersService.create(request.body)
-      const candidates = await CandidatesService.getList(user)
-
-      response.status(200).json({
-        candidates,
-        user,
-        token: jwt.sign({ id: user.id }, RequestService.TOKEN_KEY),
-      })
+      const verses = await VersesService.getList()
+      return response.send(verses)
     } catch (error: any) {
-      return response.status(400).send({statusCode: 400, message: error.message })
+      return response.status(500).send({ statusCode: 500, message: error.message })
     }
   },
 )
 
 app.post(
-  '/candidates',
+  '/verses',
   checkAccess,
   async (request: Request, response: Response) => {
     try {
-      const currentUser = storage.get(request)
-      const candidate = await CandidatesService.create(request.body, currentUser)
-      return response.send(candidate)
+      const verse = await VersesService.create(request.body)
+      return response.send(verse)
     } catch (error: any) {
-      return response.status(500).send({statusCode: 500, message: error.message })
+      return response.status(500).send({ statusCode: 500, message: error.message })
     }
   },
 )
 
 app.put(
-  '/candidates/:candidateId',
+  '/verses/:verseId',
   checkAccess,
   async (request: Request, response: Response) => {
     try {
-      const currentUser = storage.get(request)
-      const { candidateId } = request.params
-      const candidate = await CandidatesService.update(candidateId, request.body, currentUser)
-      return response.send(candidate)
+      const { verseId } = request.params
+      const verse = await VersesService.update(verseId, request.body)
+      return response.send(verse)
     } catch (error: any) {
-      return response.status(500).send({statusCode: 500, message: error.message })
+      return response.status(500).send({ statusCode: 500, message: error.message })
     }
   },
 )
 
 app.delete(
-  '/candidates/:candidateId',
+  '/verses/:verseId',
   checkAccess,
   async (request: Request, response: Response) => {
     try {
-      const currentUser = storage.get(request)
-      const { candidateId } = request.params
-      await CandidatesService.remove(candidateId, currentUser)
+      const { verseId } = request.params
+      await VersesService.remove(verseId)
       return response.send('ok')
     } catch (error: any) {
-      return response.status(500).send({statusCode: 500, message: error.message })
+      return response.status(500).send({ statusCode: 500, message: error.message })
+    }
+  },
+)
+
+app.get(
+  '/books',
+  async (_request: Request, response: Response) => {
+    try {
+      const books = await BooksService.getList()
+      return response.send(books)
+    } catch (error: any) {
+      return response.status(500).send({ statusCode: 500, message: error.message })
+    }
+  },
+)
+
+app.post(
+  '/books',
+  checkAccess,
+  async (request: Request, response: Response) => {
+    try {
+      const book = await BooksService.create(request.body)
+      return response.send(book)
+    } catch (error: any) {
+      return response.status(500).send({ statusCode: 500, message: error.message })
+    }
+  },
+)
+
+app.put(
+  '/books/:bookId',
+  checkAccess,
+  async (request: Request, response: Response) => {
+    try {
+      const { bookId } = request.params
+      const book = await BooksService.update(bookId, request.body)
+      return response.send(book)
+    } catch (error: any) {
+      return response.status(500).send({ statusCode: 500, message: error.message })
+    }
+  },
+)
+
+app.delete(
+  '/books/:bookId',
+  checkAccess,
+  async (request: Request, response: Response) => {
+    try {
+      const { bookId } = request.params
+      await BooksService.remove(bookId)
+      return response.send('ok')
+    } catch (error: any) {
+      return response.status(500).send({ statusCode: 500, message: error.message })
+    }
+  },
+)
+
+app.get(
+  '/authors',
+  checkAccess,
+  async (_request: Request, response: Response) => {
+    try {
+      const authors = await AuthorsService.getList()
+      return response.send(authors)
+    } catch (error: any) {
+      return response.status(500).send({ statusCode: 500, message: error.message })
+    }
+  },
+)
+
+app.post(
+  '/authors',
+  checkAccess,
+  async (request: Request, response: Response) => {
+    try {
+      const author = await AuthorsService.create(request.body)
+      return response.send(author)
+    } catch (error: any) {
+      return response.status(500).send({ statusCode: 500, message: error.message })
+    }
+  },
+)
+
+app.put(
+  '/authors/:authorId',
+  checkAccess,
+  async (request: Request, response: Response) => {
+    try {
+      const { authorId } = request.params
+      const author = await AuthorsService.update(authorId, request.body)
+      return response.send(author)
+    } catch (error: any) {
+      return response.status(500).send({ statusCode: 500, message: error.message })
+    }
+  },
+)
+
+app.delete(
+  '/authors/:authorId',
+  checkAccess,
+  async (request: Request, response: Response) => {
+    try {
+      const { authorId } = request.params
+      await AuthorsService.remove(authorId)
+      return response.send('ok')
+    } catch (error: any) {
+      return response.status(500).send({ statusCode: 500, message: error.message })
     }
   },
 )

@@ -16,6 +16,7 @@ module.exports = {
     "plugin:@typescript-eslint/recommended"
   ],
   rules: {
+    "object-curly-spacing": ["error", "always"],
     "semi": ["error", "never"],
     "@typescript-eslint/semi": ["error", "never"],
     indent: [2, 2, { SwitchCase: 1}],

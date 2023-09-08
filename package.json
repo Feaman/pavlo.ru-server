@@ -1,7 +1,7 @@
 {
-  "name": "elven-keep",
+  "name": "pavlo-ru-server",
   "version": "0.0.1",
-  "description": "Handy notes like Google Keep",
+  "description": "pavlo.ru server",
   "main": "src/api.ts",
   "scripts": {
     "build": "webpack --config webpack.config.js"
@@ -17,7 +17,8 @@
     "jsonwebtoken": "^8.5.1",
     "mysql": "github:mysqljs/mysql",
     "request": "^2.88.2",
-    "validatorjs": "^3.22.1"
+    "validatorjs": "^3.22.1",
+    "webpack-node-externals": "^3.0.0"
   },
   "devDependencies": {
     "@types/chrome": "^0.0.136",
