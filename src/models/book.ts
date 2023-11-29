@@ -37,6 +37,7 @@ export default class BookModel extends BaseModel {
   phone: number
   author_id: number
   author?: IAuthor
+  created: string
 
   static rules = {
     id: 'numeric',
@@ -58,6 +59,7 @@ export default class BookModel extends BaseModel {
     this.binder= data.binder
     this.communicator= data.communicator
     this.phone= data.phone
+    this.created = data.created
     this.author_id= data.author_id
     if (data.author) {
       this.author = data.author
