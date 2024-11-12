@@ -47,27 +47,14 @@ export default class BooksService extends BaseService {
     if (data.title) {
       book.title = data.title
     }
-    if (data.assessment) {
-      book.assessment = data.assessment
-    }
-    if (data.audio) {
-      book.audio= data.audio
-    }
     if (data.author_id) {
       book.author_id= data.author_id
     }
-    if (data.binder) {
-      book.binder= data.binder
-    }
-    if (data.communicator) {
-      book.communicator= data.communicator
-    }
-    if (data.phone) {
-      book.phone= data.phone
-    }
-    if (data.author_id) {
-      book.author_id= data.author_id
-    }
+    book.assessment = Number(data.assessment || 0)
+    book.audio = Number(data.audio || 0)
+    book.binder = Number(data.binder || 0)
+    book.communicator = Number(data.communicator || 0)
+    book.phone = Number(data.phone || 0)
 
     return BooksService.save(book)
   }
